@@ -35,13 +35,13 @@ def max_pool_2x2(x):
 
 xs = tf.placeholder(tf.float32, [None, 784])
 ys = tf.placeholder(tf.float32, [None, 10])
-keep_prob = tf.placeholder(tf.float32)
+keep_prob = tf.placeholder(tf.float32, name='keep_prob')
 x_image = tf.reshape(xs, [-1, 28, 28, 1])   # samples size channel
 
 
 # conv1 layer
-W_conv1 = weight_variable([5, 5, 1, 32]) # patch 5,5 out 32  in 1
-b_conv1 = bias_variable([32])
+W_conv1 = weight_variable([5, 5, 1, 32])    # 32个对于1通道的5×5卷积核
+b_conv1 = bias_variable([32])   # 32个feature map代表32个神经元，每个神经元有一个偏置
 h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)  # 28x28x32
 h_pool1 = max_pool_2x2(h_conv1)  # 14x14x32
 
@@ -65,17 +65,19 @@ b_fc2 = bias_variable([10])
 # prediction = tf.nn.softmax(tf.matmul(h_fcl_drop, W_fc2) + b_fc2)
 prediction = tf.maximum(tf.nn.softmax(tf.matmul(h_fcl_drop, W_fc2) + b_fc2), 1e-30)
 
-cross_entrop = tf.reduce_mean(-tf.reduce_sum(ys*tf.log(prediction), reduction_indices=[1]))
-train = tf.train.AdamOptimizer(1e-4).minimize(cross_entrop)
+cross_entropy = tf.reduce_mean(-tf.reduce_sum(ys*tf.log(prediction), reduction_indices=[1]))
+train = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
 
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
 for i in range(1000):
-    batch_xs, batch_ys = mnist.train.next_batch(100)    # 分批次最小化损失函数，每次100张图片
+    batch_xs, batch_ys = mnist.train.next_batch(50)    # 分批次最小化损失函数，每次100张图片
     sess.run(train, feed_dict={xs: batch_xs, ys: batch_ys, keep_prob: 1})
     if i % 50 == 0:
-        print(compute_accuracy(mnist.test.images, mnist.test.labels))
+        for j in range(10):
+            testSet = mnist.test.next_batch(50)
+            print(compute_accuracy(testSet[0], testSet[1]))
     if i == 0:
         print('prediction:', sess.run(prediction, feed_dict={xs: batch_xs, keep_prob: 1}))
 
